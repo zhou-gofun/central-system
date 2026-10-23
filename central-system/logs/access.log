@@ -1,0 +1,4 @@
+127.0.0.1:39044 - "GET /health HTTP/1.1" 200
+172.16.0.11:50002 - "GET /api/v1/scan/qrcode?app_code=jgweb_test&purpose=register HTTP/1.1" 200
+172.16.0.9:53760 - "GET /api/v1/scan/qrcode?app_code=jgweb_test&purpose=register HTTP/1.1" 500
+172.16.0.9:12962 - "GET /api/v1/scan/qrcode?app_code=jgweb_test&purpose=register HTTP/1.1" 200
