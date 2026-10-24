@@ -34,3 +34,6 @@ venv.bak/
 *.swp
 *.swo
 .DS_Store
+
+# 部署密钥
+deploy/.env

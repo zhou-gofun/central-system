@@ -1,0 +1,97 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: central-system-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # 仅本机可访问，不对公网暴露
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - central-system-net
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: central-system:1.0.0
+    container_name: central-system-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      DB_NAME: ${DB_NAME}
+      APP_NAME: Central System
+      APP_VERSION: 1.0.0
+      DEBUG: "false"
+      DOMAIN: ${DOMAIN}
+      HOST: 0.0.0.0
+      PORT: "8000"
+      WORKERS: ${WORKERS:-2}
+      TZ: Asia/Shanghai
+      # 支付模块
+      PAY_NOTIFY_BASE_URL: ${PAY_NOTIFY_BASE_URL:-https://${DOMAIN}}
+      PAY_ADMIN_KEY: ${PAY_ADMIN_KEY:-}
+      PAY_NOTIFY_RETRY: ${PAY_NOTIFY_RETRY:-3}
+    ports:
+      # 仅本机可访问，由 Caddy 对外提供 HTTPS
+      - "127.0.0.1:8000:8000"
+    networks:
+      - central-system-net
+      - sub2api-net
+
+  # 一次性数据导入工具（默认不启动）：
+  #   docker compose run --rm seed
+  # 从 data/wechat_mp_config.xlsx 导入公众号配置，并创建业务应用；
+  # 首次运行会自动生成 app_secret 并打印，之后重跑保留原密钥。
+  seed:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: central-system:1.0.0
+    profiles: ["tools"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      DB_NAME: ${DB_NAME}
+      TZ: Asia/Shanghai
+    volumes:
+      - ../../data:/seed:ro
+    command:
+      - python
+      - deploy/seed_from_xlsx.py
+      - --xlsx
+      - /seed/wechat_mp_config.xlsx
+      - --app-code
+      - ${SEED_APP_CODE:-doudouji_prod}
+      - --app-name
+      - ${SEED_APP_NAME:-豆豆集-生产环境}
+    networks:
+      - central-system-net
+
+volumes:
+  pgdata:
+    name: central-system-pgdata
+
+networks:
+  central-system-net:
+    name: central-system-net
+  # 宿主机上已有 Caddy (sub2api-caddy) 所在网络，
+  # 挂载后 Caddy 可直接以容器名反向代理本服务，避免手工 docker network connect 丢失
+  sub2api-net:
+    external: true
+    name: deploy_sub2api-network
