@@ -7,6 +7,9 @@ import traceback
 from app.common.config import settings
 from app.api.wechat.scan import router as scan_router
 from app.api.wechat.callback import router as wechat_router
+from app.api.payment.order import router as pay_order_router
+from app.api.payment.notify import router as pay_notify_router
+from app.api.payment.merchant import router as pay_merchant_router
 
 # 导入所有模型（确保 SQLAlchemy 可以发现它们）
 import app.model  # noqa
@@ -67,6 +70,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 注册路由
 app.include_router(scan_router)
 app.include_router(wechat_router)
+app.include_router(pay_order_router)
+app.include_router(pay_notify_router)
+app.include_router(pay_merchant_router)
 
 
 @app.get("/")

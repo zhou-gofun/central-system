@@ -10,6 +10,10 @@ from app.common.base import ULIDBaseMixin
 from app.model.wechat.app import WechatApp
 from app.model.wechat.mp_config import WechatMpConfig
 from app.model.wechat.session import ScanSession
+from app.model.payment.merchant import PayMerchant
+from app.model.payment.order import PayOrder
+from app.model.payment.notify_log import PayNotifyLog
+from app.model.payment.refund import PayRefund
 
 # 导出所有模型
 __all__ = [
@@ -18,4 +22,8 @@ __all__ = [
     "WechatApp",
     "WechatMpConfig",
     "ScanSession",
+    "PayMerchant",
+    "PayOrder",
+    "PayNotifyLog",
+    "PayRefund",
 ]
